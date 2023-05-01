@@ -1,7 +1,6 @@
 package com.example.epos.service.impl;
 
 import com.example.epos.entity.Orders;
-import com.example.epos.service.OrderService;
 import com.google.api.core.ApiFuture;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.*;
@@ -26,8 +25,7 @@ public class FireBaseConnect {
     private static final String MYSQL_CONNECTION_URL = "jdbc:mysql://localhost:3306/epos";
     private static final String MYSQL_USERNAME = "root";
     private static final String MYSQL_PASSWORD = "123456";
-    @Autowired
-    private OrderService orderService;
+
     @PostConstruct
     public void initialize() throws IOException, ExecutionException, InterruptedException {
             FileInputStream serviceAccount = new FileInputStream("C:/Users/zhanyu guo/Desktop/Sendout/EPOS/src/main/java/com/example/epos/service/impl/serviceAccount.json");
@@ -40,7 +38,7 @@ public class FireBaseConnect {
     public void test() throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
 
-        DocumentReference docRef = db.collection("riders").document("lotfiidiot");
+        DocumentReference docRef = db.collection("riders").document("good");
 // Add document data  with id "alovelace" using a hashmap
         Map<String, Object> data = new HashMap<>();
         data.put("first", "Ada");
@@ -68,7 +66,7 @@ public class FireBaseConnect {
                 orders.setAddressBookId(Long.parseLong(document.getString("addressID")));
                 orders.setCheckoutTime(LocalDateTime.now());
                 orders.setAmount(BigDecimal.valueOf(document.getLong("totalAmount")));
-                orderService.save(orders);
+
                 System.out.println("Orders " + (String)(document.getId()));
                 System.out.println("Orders " + document.getCreateTime());
                 System.out.println("Order time: " + document.getString("orderTime"));

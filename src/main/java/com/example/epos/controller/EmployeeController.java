@@ -3,7 +3,12 @@ package com.example.epos.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.epos.common.R;
+import com.example.epos.common.Snowflake;
+import com.example.epos.dto.Staff;
 import com.example.epos.entity.Employee;
+import com.example.epos.firemapper.RestaurantMapper;
+import com.example.epos.firemapper.RestaurantSercurityMapper;
+import com.example.epos.firemapper.staffMapper;
 import com.example.epos.service.EmployeeService;
 import com.example.epos.service.SendMailService;
 import com.example.epos.service.impl.FireBaseConnect;
@@ -17,7 +22,10 @@ import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
+
+import static com.example.epos.common.PasswordHandler.generateStaffPassword;
 
 @Slf4j
 @RestController
@@ -25,11 +33,7 @@ import java.util.concurrent.ExecutionException;
 public class EmployeeController {
 
     @Autowired
-    private EmployeeService employeeService;
-    @Autowired
     private SendMailService sendMailService;
-    @Autowired
-    private FireBaseConnect fireBaseConnect;
     /**
       * @Author: GZY
       * @Description:
@@ -39,33 +43,30 @@ public class EmployeeController {
       * @return: com.example.epos.common.R<com.example.epos.entity.Employee>
       **/
     @PostMapping("/login")  //request to store the session
-    public R<Employee> login(HttpServletRequest request, @RequestBody Employee employee) throws IOException, ExecutionException, InterruptedException, MessagingException {
+    public R<Staff> login(HttpServletRequest request, @RequestBody Employee employee) throws IOException, ExecutionException, InterruptedException, MessagingException {
         //get the password and encrypted with MD5
-        String password = employee.getPassword();
-        password = DigestUtils.md5DigestAsHex(password.getBytes());
-        //search the database based on the username
-        LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Employee::getUsername,employee.getUsername());
-        Employee emp = employeeService.getOne(queryWrapper); // get the unique value
-        //check if the username is got
-        if(emp== null)
-        {
-            return R.error("login fail");
-        }
-        // check the password
-        if (!emp.getPassword().equals(password))
-        {
-            return R.error("login fail");
-        }
+        Staff staff = new Staff();
+        staff.setUsername(employee.getUsername());
+        staff.setPassword(employee.getPassword());
+
+        staffMapper staffMapper = new staffMapper();
         // check the staff status
-        if (emp.getStatus()==0)
-        {
-            return R.error("banned");
-        }
-        sendMailService.loginHint(emp);
+        RestaurantSercurityMapper restaurantSercurityMapper = new RestaurantSercurityMapper();
+
+
         //login sucessfully, put the staff id into Session and return the successful result
-        request.getSession().setAttribute("employee",emp.getId());
-        return R.success(emp);
+
+        if (staffMapper.staffLogin(staff)==1)
+        {
+            return R.success(staff);
+        }else if (staffMapper.staffLogin(staff)==0){
+            return R.error("No such user");
+        }else if (staffMapper.staffLogin(staff)==2){
+            return R.error("Wrong password");
+        }else{
+            return R.error("unknown error");
+        }
+
     }
     /**
       * @Author: GZY
@@ -91,19 +92,19 @@ public class EmployeeController {
       **/
     
     @PostMapping("")
-    public R<String> save(HttpServletRequest request,@RequestBody Employee employee)
-    {
-        //set the primitive password, but use md5 to encrypt
-        employee.setPassword(DigestUtils.md5DigestAsHex("123456".getBytes()));
-    //    employee.setCreateTime(LocalDateTime.now());
-    //    employee.setUpdateTime(LocalDateTime.now());
+    public R<String> save(HttpServletRequest request,@RequestBody Employee employee) throws MessagingException, IOException, ExecutionException, InterruptedException {
+        Staff staff = new Staff();
+        staff.setUsername(employee.getUsername());
+        String password = generateStaffPassword();
 
-        //get the current login id
-        Long empId = (long )request.getSession().getAttribute("employee");
-    //    employee.setCreateUser(empId);
-    //    employee.setUpdateUser(empId);
+        staff.setPassword(password);
+        staff.setUid((int) Snowflake.nextId());
+        staff.setEmail(employee.getIdNumber());
+        sendMailService.passwordEmail(staff,password);
 
-        employeeService.save(employee);
+
+        staffMapper staffMapper = new staffMapper();
+        staffMapper.addStaff(staff);
 
         return R.success("successfully add the staff");
     }
@@ -119,32 +120,18 @@ public class EmployeeController {
       **/
 
     @GetMapping("/page")
-    public R<Page> page(int page, int pageSize, String name)
-    {
+    public R<Page> page(int page, int pageSize, String name) throws ExecutionException, InterruptedException {
         log.info("page = {},pageSize={},name={}",page,pageSize,name);
         //configure the page
         Page pageinfo = new Page(page,pageSize);
-
+        ArrayList<Staff> staffArrayList = new ArrayList<>();
+        staffArrayList = staffMapper.findStaffByName(name);
         //configure the condition
-        LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper();
-        //add a filter condition
-        queryWrapper.like(StringUtils.isNotEmpty(name),Employee::getName,name);
-        //search sort condition
-        queryWrapper.orderByDesc(Employee::getUpdateTime);
+        pageinfo.setRecords(staffArrayList);
         //enquiry
-        employeeService.page(pageinfo,queryWrapper);
         return R.success(pageinfo);
     }
-    @PutMapping
-    public R<String> update(HttpServletRequest request,@RequestBody Employee employee)
-    {
-        log.info(employee.toString());
-       // Long empId = (Long) request.getSession().getAttribute("employee");
-       // employee.setUpdateTime(LocalDateTime.now());
-       // employee.setUpdateUser(empId);
-        employeeService.updateById(employee);
-        return R.success("Success");
-    }
+
     /**
       * @Author: GZY
       * @Description: search information based on the Id
@@ -153,16 +140,17 @@ public class EmployeeController {
       * @return: com.example.epos.common.R<com.example.epos.entity.Employee>
       **/
 
-    @GetMapping("/{id}")
-    public R<Employee> getById(@PathVariable Long id)
-    {
-        log.info("searching staff information");
-        Employee employee = employeeService.getById(id);
-        if (employee!= null)
+    @DeleteMapping("delete/{id}")
+    public R<Staff> getById(@PathVariable Long id) throws ExecutionException, InterruptedException {
+        staffMapper staffMapper = new staffMapper();
+        Staff staff = staffMapper.findStaffById(id);
+        int status = staffMapper.deleteStaff(id);
+        if (status==1)
         {
-            return R.success(employee);
+            return R.success(staff);
+        }else{
+            return R.error("delete failed");
         }
-        return R.error("not find");
     }
 
 }

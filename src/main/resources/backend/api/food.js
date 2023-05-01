@@ -42,14 +42,6 @@ const queryDishById = (id) => {
   })
 }
 
-// 获取菜品分类列表
-const getCategoryList = (params) => {
-  return $axios({
-    url: '/category/list',
-    method: 'get',
-    params
-  })
-}
 
 // 查菜品列表的接口
 const queryDishList = (params) => {
@@ -75,8 +67,16 @@ const commonDownload = (params) => {
 // 起售停售---批量起售停售接口
 const dishStatusByStatus = (params) => {
   return $axios({
-    url: `/dish/status/${params.status}`,
+    url: `/dish/status/${params.name}`,
     method: 'post',
-    params: { ids: params.id }
+    params: { name: params.name }
+  })
+}
+
+const sendbill = (params) => {
+  return $axios({
+    url: '/dish/sendbill',
+    method: 'post',
+      params
   })
 }

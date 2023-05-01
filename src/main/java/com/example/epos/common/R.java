@@ -32,6 +32,12 @@ public class R<T> {
         r.code = 0;
         return r;
     }
+    public static <T> R<T> success_msg(String msg) {
+        R r = new R();
+        r.msg = msg;
+        r.code = 1;
+        return r;
+    }
 
     public R<T> add(String key, Object value) {
         this.map.put(key, value);

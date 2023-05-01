@@ -16,7 +16,7 @@
       <div class="tableBar">
         <el-input
           v-model="input"
-          placeholder="Please enter the name of the dish"
+          placeholder="Please enter the name of the restaurant"
           style="width: 250px"
           clearable
           @keyup.enter.native="handleQuery"
@@ -29,14 +29,11 @@
           ></i>
         </el-input>
         <div class="tableLab">
-          <span class="span-btn delBut non" @click="deleteHandle('批量', null)">Bulk delete</span>
-          <span class="span-btn blueBug non" @click="statusHandle('1')">Bulk sales</span>
-          <span style="border:none;" class="span-btn delBut non" @click="statusHandle('0')">Bulk stop sale</span>
           <el-button
             type="primary"
             @click="addFoodtype('add')"
           >
-            + New dishes
+            + New restaurant
           </el-button>
         </div>
       </div>
@@ -52,13 +49,13 @@
         ></el-table-column>
         <el-table-column
           prop="name"
-          label="Name of the dish"
+          label="Restaurant Name"
         ></el-table-column>
         <el-table-column prop="image" label="Photos" align="center">
           <template slot-scope="{ row }">
             <el-image style="width: auto; height: 40px; border:none;cursor: pointer;" 
             :src="getImage(row.image)" 
-            :preview-src-list="[ `/common/download?name=${row.image}` ]" >
+            :preview-src-list="[ `${row.image}` ]" >
             <div slot="error" class="image-slot">
               <img src="./../../images/noImg.png"  style="width: auto; height: 40px; border:none;" >
             </div>  
@@ -67,11 +64,11 @@
         </el-table-column>
         <el-table-column
           prop="categoryName"
-          label="Cuisine Categories"
+          label="Email"
         ></el-table-column>
-        <el-table-column label="Selling Price">
+        <el-table-column label="earnings">
           <template slot-scope="scope">
-            <span style="margin-right: 10px;">£{{ scope.row.price/100 }}</span>
+            <span style="margin-right: 10px;">£{{ scope.row.price }}</span>
           </template>
         </el-table-column>
         <el-table-column label="Selling Status">
@@ -79,10 +76,6 @@
             <span style="margin-right: 10px;">{{ scope.row.status == '0' ? 'Stop' : 'Launch' }}</span>
           </template>
         </el-table-column>
-        <el-table-column
-          prop="updateTime"
-          label="Last operating time"
-        >
         </el-table-column>
         <el-table-column
           label="Operation"
@@ -90,14 +83,7 @@
           align="center"
         >
           <template slot-scope="scope">
-            <el-button
-              type="text"
-              size="small"
-              class="blueBug"
-              @click="addFoodtype(scope.row.id)"
-            >
-              Modifications
-            </el-button>
+
             <el-button
               type="text"
               size="small"
@@ -107,12 +93,12 @@
               {{ scope.row.status == '0' ? 'Launch' : 'Stop' }}
             </el-button>
             <el-button
-              type="text"
-              size="small"
-              class="delBut non"
-              @click="deleteHandle('Single Delete', scope.row.id)"
+                    type="text"
+                    size="small"
+                    class="blueBug"
+                    @click="generate(scope.row)"
             >
-              Delete
+              send
             </el-button>
           </template>
         </el-table-column>
@@ -174,7 +160,7 @@
             })
           },
           getImage (image) {
-            return `/common/download?name=${image}`
+            return `${image}`
           },
           handleQuery() {
             this.page = 1;
@@ -186,57 +172,47 @@
               window.parent.menuHandle({
                 id: '4',
                 url: '/backend/page/food/add.html',
-                name: 'Add a dish'
+                name: 'Add a restaurant'
               },true)
             } else {
               window.parent.menuHandle({
                 id: '4',
                 url: '/backend/page/food/add.html?id='+st,
-                name: 'Modification of dishes'
+                name: 'Modification of restaurant'
               },true)
             }
           },
-
-          // 删除
-          deleteHandle (type, id) {
-            if (type === '批量' && id === null) {
-              if (this.checkList.length === 0) {
-                return this.$message.error('Please select who to delete')
+          generate(row) {
+            let params = {}
+            params.id = row.id
+            sendbill(params).then(res => {
+              if (String(res.code) === '1') {
+                this.$message.success('Send success!')
+              } else {
+                this.$message.error('Send failure!')
               }
-            }
-            this.$confirm('Confirm deletion of this dish, do you want to continue?' , 'OK to delete', {
-              'confirmButtonText': 'Determine',
-              'cancelButtonText': 'Cancellation',
-            }).then(() => {
-              deleteDish(type === 'Bulk' ? this.checkList.join(',') : id).then(res => {
-                if (res.code === 1) {
-                  this.$message.success('Deleted successfully!')
-                  this.handleQuery()
-                } else {
-                  this.$message.error(res.msg || 'Operation failed')
-                }
-              }).catch(err => {
-                this.$message.error('The request was in error.' + err)
-              })
+            }).catch(err => {
+              this.$message.error('The request was in error.' + err)
             })
           },
-
           //状态更改
           statusHandle (row) {
+            console.log(row)
             let params = {}
             if (typeof row === 'string' ) {
               if (this.checkList.length === 0) {
-                this.$message.error('Batch operation, please tick the operation dishes first!')
+                this.$message.error('Batch operation, please tick the operation restaurant first!')
                 return false
               }
               params.id = this.checkList.join(',')
               params.status = row
             } else {
-              params.id = row.id
+              params.name = row.name
               params.status = row.status ? '0' : '1'
             }
             this.dishState = params
-            this.$confirm('Confirm to change the status of this dish?' , 'Prompt', {
+            console.log(params)
+            this.$confirm('Confirm to change the status of this restaurant?' , 'Prompt', {
               'confirmButtonText': 'Determine',
               'cancelButtonText': 'Cancellation',
               'type': 'warning'

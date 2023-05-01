@@ -1,5 +1,7 @@
 package com.example.epos.service.impl;
 
+import com.example.epos.dto.Staff;
+import com.example.epos.entity.Bill;
 import com.example.epos.entity.Employee;
 import com.example.epos.entity.MailRequest;
 import com.example.epos.entity.Restaurant;
@@ -64,37 +66,14 @@ public class SendMailServiceImpl implements SendMailService {
         javaMailSender.send(message);
         logger.info("success:{}->{}",sendMailer,mailRequest.getSendTo());
     }
-    @Override
-    public void loginHint(Employee employee) throws IOException, MessagingException {
+    public void registerEmail(Restaurant restaurant,String hostEmail) throws IOException, MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
         //邮件发件人
         helper.setFrom(sendMailer);
+        String [] receivers = {restaurant.getEmail(),hostEmail};
         //邮件收件人 1或多个
-        helper.setTo("gzy7189@gmail.com");
-        //邮件主题
-        helper.setSubject("login");
-        //邮件内容
-        helper.setText("Your account has been logged in"+employee.getUsername());
-
-        //邮件发送时间
-        message.setSentDate(new Date());
-
-        PDDocument pdf = generatePdf();
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        pdf.save(byteArrayOutputStream);
-        ByteArrayResource pdfResource = new ByteArrayResource(byteArrayOutputStream.toByteArray());
-
-        helper.addAttachment("yours.pdf",pdfResource);
-        javaMailSender.send(message);
-    }
-    public void registerEmail(Restaurant restaurant) throws IOException, MessagingException {
-        MimeMessage message = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
-        //邮件发件人
-        helper.setFrom(sendMailer);
-        //邮件收件人 1或多个
-        helper.setTo("gzy7189@gmail.com");
+        helper.setTo(receivers);
         //邮件主题
         helper.setSubject("Register Request");
         //邮件内容
@@ -111,22 +90,54 @@ public class SendMailServiceImpl implements SendMailService {
         helper.addAttachment("Register.pdf",pdfResource);
         javaMailSender.send(message);
     }
-    private PDDocument generatePdf() throws IOException {
-        PDDocument doc = new PDDocument();
-        PDPage page = new PDPage();
-        doc.addPage(page);
-        PDPageContentStream contentStream = new PDPageContentStream(doc, page);
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD,12);
-        contentStream.showText("restaurant information");
-        contentStream.newLine();
+    public void passwordEmail(Staff staff,String password) throws MessagingException, IOException {
+        MimeMessage message = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        //邮件发件人
+        helper.setFrom(sendMailer);
+        String [] receivers = {staff.getEmail()};
+        //邮件收件人 1或多个
+        helper.setTo(receivers);
+        //邮件主题
+        helper.setSubject("Your password");
+        //邮件内容
+        helper.setText("The password for staff"+staff.getUsername());
 
-        contentStream.showText("what is");
-        contentStream.endText();
-        contentStream.close();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        doc.save(out);
-        return doc;
+        //邮件发送时间
+        message.setSentDate(new Date());
+
+        PDDocument pdf = pdfService.PasswordPDF(password);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        pdf.save(byteArrayOutputStream);
+        ByteArrayResource pdfResource = new ByteArrayResource(byteArrayOutputStream.toByteArray());
+
+        helper.addAttachment("password.pdf",pdfResource);
+        javaMailSender.send(message);
+    }
+    @Override
+    public void sendInvoicePDF(Bill bill) throws MessagingException, IOException {
+        MimeMessage message = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        //邮件发件人
+        helper.setFrom(sendMailer);
+
+        //邮件收件人 1或多个
+        helper.setTo("gzy7189@gmail.com");
+        //邮件主题
+        helper.setSubject("Your invoice");
+        //邮件内容
+        helper.setText("Your invoice");
+
+        //邮件发送时间
+        message.setSentDate(new Date());
+
+        PDDocument pdf = pdfService.OrderPDF(bill);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        pdf.save(byteArrayOutputStream);
+        ByteArrayResource pdfResource = new ByteArrayResource(byteArrayOutputStream.toByteArray());
+
+        helper.addAttachment("invoice.pdf",pdfResource);
+        javaMailSender.send(message);
     }
 }
 

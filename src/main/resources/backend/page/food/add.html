@@ -60,129 +60,31 @@
       >
         <div>
           <el-form-item
-            label="Name of the dish:"
+            label="restaurant name:"
             prop="name"
           >
             <el-input
               v-model="ruleForm.name"
-              placeholder="Please fill in the name of the dish"
+              placeholder="Please fill in the name of the restaurant"
               maxlength="20"
             />
           </el-form-item>
           <el-form-item
-            label="Cuisine Categories:"
-            prop="categoryId"
-          >
-            <el-select
-              v-model="ruleForm.categoryId"
-              placeholder="Please select a dish category"
-            >
-              <el-option v-for="(item,index) in dishList" :key="index" :label="item.name" :value="item.id" />
-            </el-select>
-          </el-form-item>
-        </div>
-        <div>
-          <el-form-item
-            label="Cuisine prices:"
-            prop="price"
+            label="Email"
+            prop="categoryName"
           >
             <el-input
-              v-model="ruleForm.price"
-              placeholder="Please set the price of the dish"
+                    v-model="ruleForm.categoryName"
+                    placeholder="Please fill in the email"
+                    maxlength="20"
             />
           </el-form-item>
         </div>
-        <el-form-item label="Taste and practice configuration:">
-          <el-form-item>
-            <div class="flavorBox">
-              <span
-                v-if="dishFlavors.length == 0"
-                class="addBut"
-                @click="addFlavore"
-              > + Add a flavour</span>
-              <div
-                v-if="dishFlavors.length != 0"
-                class="flavor"
-              >
-                <div class="title">
-                  <span>Flavour name (within 3 words)</span><span>Flavour labels (enter label and enter to add)</span>
-                </div>
-                <div class="cont">
-                  <div
-                    v-for="(item, index) in dishFlavors"
-                    :key="index"
-                    class="items"
-                  >
-                    <div class="itTit">
-                      <!-- <SelectInput
-                        :dish-flavors-data="dishFlavorsData"
-                        :index="index"
-                        :value="item.name"
-                        @select="selectHandle"
-                      /> -->
-                      <div class="selectInput">
-                        <div>
-                           <el-input
-                              v-model="item.name"
-                              type="text"
-                              style="width: 100%"
-                              placeholder="Please enter a taste"
-                              @focus="selectFlavor(true,index)"
-                              @blur="outSelect(false,index)"
-                              @input="inputHandle(index)"
-                            />
-                        </div>
-                        <div v-show="item.showOption" class="flavorSelect">
-                          <span
-                            v-for="(it, ind) in dishFlavorsData"
-                            :key="ind"
-                            class="items"
-                            @click="checkOption(it,ind,index)"
-                          >{{ it.name }}</span>
-                          <span
-                            v-if="dishFlavorsData == []"
-                            class="none"
-                          >No data available</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      class="labItems"
-                      style="display: flex"
-                    >
-                      <span
-                        v-for="(it, ind) in item.value"
-                        :key="ind"
-                      >{{ it }} <i @click="delFlavorLabel(index, ind)">X</i></span>
-                      <div
-                        class="inputBox"
-                        :style="inputStyle"
-                        contenteditable="true"
-                        @focus="flavorPosition(index)"
-                        @keydown.enter="(val)=>keyDownHandle(val,index)"
-                      ></div>
-                    </div>
-                    <span
-                      class="delFlavor delBut non"
-                      @click="delFlavor(index)"
-                    >Delete</span>
-                  </div>
-                </div>
-                <div
-                  class="addBut"
-                  @click="addFlavore"
-                >
-                  Add a flavour
-                </div>
-              </div>
-            </div>
-          </el-form-item>
-        </el-form-item>
         <div>
         </div>
         <div>
           <el-form-item
-            label="Pictures of the dishes:"
+            label="Pictures of the restaurant:"
             prop="region"
             class="uploadImg"
           >
@@ -208,14 +110,14 @@
         </div>
         <div class="address">
           <el-form-item
-            label="Description of the dish:"
+            label="Description of the restaurant:"
             prop="region"
           >
             <el-input
               v-model="ruleForm.description"
               type="textarea"
               :rows="3"
-              placeholder="Description of the dish, max 200 words"
+              placeholder="Description of the restaurant, max 200 words"
               maxlength="200"
             />
           </el-form-item>
@@ -237,7 +139,7 @@
               class="continue"
               @click="submitForm('ruleForm','goAnd')"
             >
-              Save and continue adding dishes
+              Save and continue adding restaurants
             </el-button>
           </el-form-item>
         </div>
@@ -280,7 +182,7 @@
               'description': '',
               'dishFlavors': [],
               'status': true,
-              categoryId: ''
+              categoryName: ''
             },
             mak: false
           }
@@ -291,7 +193,7 @@
               'name': [
                 {'required': true, 'message': 'Please fill in the name of the dish', 'trigger': 'blur'}
               ],
-              'categoryId': [
+              'categoryName': [
                 {'required': true, 'message': 'Please select a dish category', 'trigger': 'change'}
               ],
               'price': [
@@ -342,7 +244,7 @@
                 this.ruleForm.status = res.data.status == '1'
                 this.dishFlavors = res.data.flavors && res.data.flavors.map(obj => ({ ...obj, value: JSON.parse(obj.value),showOption: false }))
                 console.log('this.dishFlavors',this.dishFlavors)
-                // this.ruleForm.id = res.data.data.categoryId
+                // this.ruleForm.id = res.data.data.categoryName
                 // this.imageUrl = res.data.data.image
                 this.imageUrl = `/common/download?name=${res.data.image}`
               } else {
@@ -387,55 +289,6 @@
             }
           },
 
-          // 获取菜品分类
-          getDishList () {
-            getCategoryList({ 'type': 1 }).then(res => {
-              if (res.code === 1) {
-                this.dishList = res.data
-              } else {
-                this.$message.error(res.msg || 'Operation failed')
-              }
-            })
-          },
-
-          // 获取口味列表
-          getFlavorListHand () {
-            // flavor flavorData
-            this.dishFlavorsData = [
-              {'name':'Sweetness','value':['no','less','half','more','whole']},
-              {'name':'ice','value':['hot','room','no','less','more']},
-              {'name':'allergy','value':['garlic','rice','peanut','fish']},
-              {'name':'spice','value':['no','regular','medium','heavy']}
-            ]
-          },
-
-          selectFlavor(st,index){
-            console.log('st',st)
-            console.log('index',index)
-            console.log('this.dishFlavors',this.dishFlavors)
-            const obj = JSON.parse(JSON.stringify(this.dishFlavors[index]))
-            obj.showOption = st
-            this.dishFlavors.splice(index,1,obj)
-            // this.dishFlavors[index].showOption = st
-          },
-
-          outSelect(st,index){
-            const _this = this
-            setTimeout(()=> {
-              const obj = JSON.parse(JSON.stringify(_this.dishFlavors[index]))
-              obj.showOption = st
-              _this.dishFlavors.splice(index,1,obj)
-            }, 200)
-          },
-
-          inputHandle(val,index){
-            // this.selectFlavor(false,index)
-          },
-
-          checkOption(val, ind, index){
-            this.selectHandle(val.name, index, ind)
-            this.dishFlavors[index].name = val.name
-          },
 
           selectHandle(val, key, ind){
             const arrDate = [...this.dishFlavors]
@@ -450,7 +303,7 @@
                 // params.flavors = this.dishFlavors
                 params.status = this.ruleForm ? 1 : 0
                 params.price *= 100
-                params.categoryId = this.ruleForm.categoryId
+                params.categoryName = this.ruleForm.categoryName
                 params.flavors = this.dishFlavors.map(obj => ({ ...obj, value: JSON.stringify(obj.value) }))
                 delete params.dishFlavors
                 if(!this.imageUrl){
@@ -477,7 +330,7 @@
                           'description': '',
                           'dishFlavors': [],
                           'status': true,
-                          categoryId: ''
+                          categoryName: ''
                         }
                       }
                     } else {

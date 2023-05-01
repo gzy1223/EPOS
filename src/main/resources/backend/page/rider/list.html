@@ -9,82 +9,94 @@
   <link rel="stylesheet" href="../../plugins/element-ui/index.css" />
   <link rel="stylesheet" href="../../styles/common.css" />
   <link rel="stylesheet" href="../../styles/page.css" />
-  <style>
-    #member-app  .notAdmin::after{
-      border: 0 !important;
-
-    }
-  </style>
 </head>
 <body>
-  <div class="dashboard-container" id="member-app">
+   <div class="dashboard-container" id="food-app">
     <div class="container">
+
       <div class="tableBar">
         <el-input
           v-model="input"
-          placeholder="staff email"
+          placeholder="Please enter the name of the rider"
           style="width: 250px"
           clearable
-           @keyup.enter.native="handleQuery"
+          @keyup.enter.native="handleQuery"
         >
           <i
             slot="prefix"
             class="el-input__icon el-icon-search"
             style="cursor: pointer"
-            @click="handleQuery"
+            @click="init"
           ></i>
         </el-input>
-        <el-button
-          type="primary"
-          @click="addMemberHandle('add')"
-        >
-          + add staff
-        </el-button>
+
       </div>
       <el-table
         :data="tableData"
         stripe
         class="tableBox"
+        @selection-change="handleSelectionChange"
       >
         <el-table-column
-          prop="email"
-          label="email"
+          type="selection"
+          width="25"
         ></el-table-column>
         <el-table-column
-          prop="username"
-          label="account"
+          prop="riderName"
+          label="rider Name"
         ></el-table-column>
-        <el-table-column label="account status">
-          <template slot-scope="scope">
-            {{ String(scope.row.status) === '0' ? 'banned' : 'normal' }}
+        <el-table-column prop="riderAvatarUrl" label="Photos" align="center">
+          <template slot-scope="{ row }">
+            <el-image style="width: auto; height: 40px; border:none;cursor: pointer;" 
+            :src="getImage(row.riderAvatarUrl)"
+            :preview-src-list="[ `${row.riderAvatarUrl}` ]" >
+            <div slot="error" class="image-slot">
+              <img src="./../../images/noImg.png"  style="width: auto; height: 40px; border:none;" >
+            </div>  
+          </el-image>
           </template>
         </el-table-column>
         <el-table-column
-          label="operate"
+          prop="riderEmail"
+          label="Email"
+        ></el-table-column>
+        <el-table-column label="earnings">
+          <template slot-scope="scope">
+            <span style="margin-right: 10px;">£{{ scope.row.earnings }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="belongs">
+          <template slot-scope="scope">
+            <span style="margin-right: 10px;">{{ scope.row.belonging }}</span>
+          </template>
+        </el-table-column>
+        </el-table-column>
+        <el-table-column
+          label="Operation"
           width="160"
           align="center"
         >
           <template slot-scope="scope">
+
             <el-button
               type="text"
               size="small"
               class="blueBug"
-              @click="addMemberHandle('delete', scope.row.uid)"
-              :class="{notAdmin:user !== 'admin'}"
+              @click="addRiderType(scope.row)"
             >
-              delete
+              change belonging
             </el-button>
           </template>
         </el-table-column>
       </el-table>
       <el-pagination
         class="pageList"
-        :page-sizes="[2]"
+        :page-sizes="[10, 20, 30, 40]"
         :page-size="pageSize"
         layout="total, sizes, prev, pager, next, jumper"
         :total="counts"
-        :current-page.sync="page"
         @size-change="handleSizeChange"
+        :current-page.sync="page"
         @current-change="handleCurrentChange"
       ></el-pagination>
     </div>
@@ -96,28 +108,24 @@
     <!-- 引入axios -->
     <script src="../../plugins/axios/axios.min.js"></script>
     <script src="../../js/request.js"></script>
-    <script src="../../api/member.js"></script>
+    <script src="../../api/rider.js"></script>
     <script>
       new Vue({
-        el: '#member-app',
+        el: '#food-app',
         data() {
           return {
              input: '',
              counts: 0,
              page: 1,
-             pageSize: 2,
+             pageSize: 10,
              tableData : [],
-             id : '',
-             status : '',
+             riderbelong : '',
+             checkList: []
           }
         },
         computed: {},
         created() {
           this.init()
-            if(localStorage.getItem('userInfo') != null){
-                //get current user
-                this.user = JSON.parse(localStorage.getItem('userInfo')).username
-            }
         },
         mounted() {
         },
@@ -128,73 +136,64 @@
               pageSize: this.pageSize,
               name: this.input ? this.input : undefined
             }
-            await getMemberList(params).then(res => {
+            await getRiderPage(params).then(res => {
               if (String(res.code) === '1') {
                 this.tableData = res.data.records || []
-                console.log('Table data:', this.tableData); // Add this line
                 this.counts = res.data.total
               }
             }).catch(err => {
-              this.$message.error('error' + err)
+              this.$message.error('The request was in error.' + err)
             })
+          },
+          getImage (image) {
+            return `${image}`
           },
           handleQuery() {
             this.page = 1;
             this.init();
           },
-           // add
-          addMemberHandle(action, uid) {
-            if (action === 'add'){
-              window.parent.menuHandle({
-                id: '2',
-                url: '/backend/page/member/add.html',
-                name: 'add staff'
-              },true)
-            } else if (action === 'delete'){
-              this.id = uid;
-              this.$confirm('confirm to delete?', 'hint', {
-                'confirmButtonText': 'confirm',
-                'cancelButtonText': 'cancel',
-                'type': 'warning'
-              }).then(() => {
-                this.deleteStaffMember(this.id);
-              })
-            }
-          },
-          async deleteStaffMember(id) {
-            try {
+          // 添加
 
-              const response = await axios.delete(`/employee/delete/${id}`);
-              if (response.data.code === '1') {
-                this.$message.success('Delete successful');
-                this.handleQuery();
-              } else {
-                this.$message.error('Error: ' + response.data.message);
-              }
-            } catch (error) {
-              this.$message.error('Error: ' + error);
-            }
-          },
-          //状态修改
-          statusHandle (row) {
-            console.log(row.id)
-            this.id = row.id
-            this.status = row.status
-            this.$confirm('confirm to change?', 'hint', {
-              'confirmButtonText': 'confirm',
-              'cancelButtonText': 'cancel',
+          //状态更改
+          addRiderType (row) {
+            console.log(row)
+            let params = {}
+            params.name = row.riderName
+            params.id = row.id
+            st = row.riderName
+            this.riderbelong = params
+            console.log(params)
+            window.parent.menuHandle({
+              id: '4',
+              url: '/backend/page/rider/add.html?id='+st,
+              name: 'Modification of rider'
+            },true)
+            this.$confirm('Confirm to change the status of this rider?' , 'Prompt', {
+              'confirmButtonText': 'Determine',
+              'cancelButtonText': 'Cancellation',
               'type': 'warning'
-              }).then(() => {
-              enableOrDisableEmployee({ 'id': this.id, 'status': !this.status ? 1 : 0 }).then(res => {
-                console.log('enableOrDisableEmployee',res)
-                if (String(res.code) === '1') {
-                  this.$message.success('change successful')
+            }).then(() => {
+
+              riderBelong(this.riderbelong).then(res => {
+                if (res.code === 1) {
+                  this.$message.success('The belonging has been changed successfully!')
                   this.handleQuery()
+                } else {
+                  this.$message.error(res.msg || 'Operation failed')
                 }
               }).catch(err => {
-                this.$message.error('error' + err)
+                  this.$message.error('The request was in error.' + err)
               })
             })
+          },
+
+          // operation
+          handleSelectionChange (val){
+            let checkArr = []
+            val.forEach((n) => {
+              checkArr.push(n.id)
+            })
+            this.checkList = checkArr
           },
           handleSizeChange (val) {
             this.pageSize = val

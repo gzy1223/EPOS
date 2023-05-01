@@ -74,7 +74,7 @@
           <div class="navbar">
             <div class="head-lable">
               <span v-if="goBackFlag" class="goBack" @click="goBack()"
-                ><img src="images/icons/btn_back@2x.png" alt="" /> 返回</span
+                ><img src="images/icons/btn_back@2x.png" alt="" /> back</span
               >
               <span>{{headTitle}}</span>
             </div>
@@ -118,10 +118,7 @@
             menuActived: '2',
             userInfo: {},
             menuList: [
-              // {
-              //   id: '1',
-              //   name: '门店管理',
-              //   children: [
+
                   {
                     id: '2',
                     name: 'Staff',
@@ -130,25 +127,19 @@
                   },
                   {
                     id: '3',
-                    name: 'Category',
-                    url: 'page/category/list.html',
+                    name: 'Rider',
+                    url: 'page/rider/list.html',
                     icon: 'icon-category'
                   },
                   {
                     id: '4',
-                    name: 'dish',
+                    name: 'Restaurant',
                     url: 'page/food/list.html',
                     icon: 'icon-food'
                   },
                   {
-                    id: '5',
-                    name: 'set meal',
-                    url: 'page/combo/list.html',
-                    icon: 'icon-combo'
-                  },
-                  {
                     id: '6',
-                    name: 'order detail',
+                    name: 'order',
                     url: 'page/order/list.html',
                     icon: 'icon-order'
                   }
@@ -156,7 +147,7 @@
               // },
             ],
             iframeUrl: 'page/member/list.html',
-            headTitle: '员工管理',
+            headTitle: 'staff',
             goBackFlag: false,
             loading: true,
             timer: null

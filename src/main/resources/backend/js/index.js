@@ -1,5 +1,5 @@
-/* 自定义trim */
-function trim (str) {  //删除左右两端的空格,自定义的trim()方法
+/* selfdefined trim */
+function trim (str) {  //
   return str == undefined ? "" : str.replace(/(^\s*)|(\s*$)/g, "")
 }
 
