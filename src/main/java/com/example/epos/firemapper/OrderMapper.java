@@ -1,20 +1,20 @@
 package com.example.epos.firemapper;
 
 import com.example.epos.common.BaseContext;
+import com.example.epos.dto.MenuforBillDto;
 import com.example.epos.dto.OrderDto;
 import com.example.epos.dto.Staff;
 import com.example.epos.entity.Bill;
 import com.example.epos.entity.Orders;
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.Query;
-import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
 import com.sun.org.apache.xpath.internal.operations.Or;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class OrderMapper {
@@ -79,6 +79,34 @@ public class OrderMapper {
         String userName = future.get().getDocuments().get(0).get("name").toString();
         return userName;
     }
+    public static MenuforBillDto getMenus(String uid, String sellerUid) throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        DocumentReference sellerDoc = db.collection("sellers").document(sellerUid);
+
+// Access the "menus" subcollection and get the first document
+        ApiFuture<QuerySnapshot> menuSnapshot = sellerDoc.collection("menus").limit(1).get();
+        QueryDocumentSnapshot firstMenuDoc = null;
+        try {
+            List<QueryDocumentSnapshot> menuDocs = menuSnapshot.get().getDocuments();
+            if (!menuDocs.isEmpty()) {
+                firstMenuDoc = menuDocs.get(0);
+            } else {
+                System.out.println("No documents found in the 'menus' subcollection.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (firstMenuDoc != null) {
+            String menuDocId = firstMenuDoc.getId();
+            ApiFuture<QuerySnapshot> itemSnapshot = sellerDoc.collection("menus").document(menuDocId).collection("items").whereEqualTo("itemID", uid).get();
+            MenuforBillDto menuforBillDto = new MenuforBillDto();
+            menuforBillDto.setName(itemSnapshot.get().getDocuments().get(0).get("shortInfo").toString());
+            menuforBillDto.setPrice(itemSnapshot.get().getDocuments().get(0).get("price").toString());
+            return menuforBillDto;
+            // Rest of the code...
+        }
+        return null;
+    }
     // return the order status 0 or 1 should put in service layer
     public static int getOrderStatus(String payment) {
         char c = payment.charAt(0);
@@ -113,8 +141,45 @@ public class OrderMapper {
             LocalDateTime orderTime = BaseContext.Timestamp2LocalDateTime(orderTimeStamp);
             if (orderTime.isAfter(oneWeekAgo)&& orderTime.isBefore(now)){
                 bill.setOrderTime(String.valueOf(orderTime));
-                Long totalAmount = 5L;
+                Long totalAmount = future.get().getDocuments().get(i).getLong("totalAmount");
                 bill.setTotalAmount(totalAmount);
+                bill.setSellerUID(future.get().getDocuments().get(i).get("sellerUID").toString());
+                bill.setTitle(future.get().getDocuments().get(i).get("orderId").toString());
+                bill.setSubtitle("Invoice");
+                bill.setPaymentDetails(future.get().getDocuments().get(i).get("paymentDetails").toString());
+                ArrayList<String> productNames = new ArrayList<>();
+                productNames = (ArrayList<String>) future.get().getDocuments().get(i).get("productIDs");
+                bill.setProductNames(productNames);
+                bill.setRestaurantName(getSellerName(future.get().getDocuments().get(i).get("sellerUID").toString()));
+                BillArrayList.add(bill);
+            }else {
+                break;
+            }
+
+        }
+        return BillArrayList;
+    }
+    public static ArrayList getOrderByname(String name) throws ExecutionException, InterruptedException {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime oneWeekAgo = now.minusDays(60);// change to billing to one week
+        Firestore db = FirestoreClient.getFirestore();
+        //get seller uid
+        Query sellerUidQuery =db.collection("sellers").whereEqualTo("sellerName",name);
+        ApiFuture<QuerySnapshot> sellerUidFuture = sellerUidQuery.get();
+        String sellerUid = sellerUidFuture.get().getDocuments().get(0).get("sellerUID").toString();
+        Query uidQuery =db.collection("orders");
+        ApiFuture<QuerySnapshot> future = uidQuery.whereEqualTo("sellerUID",sellerUid).get();
+        ArrayList<Bill> BillArrayList = new ArrayList<>();
+        int size  = future.get().size();
+        for (int i = 0;i<size;i++){
+            Bill bill = new Bill();
+            String orderTimeStamp = future.get().getDocuments().get(i).get("orderTime").toString();
+            LocalDateTime orderTime = BaseContext.Timestamp2LocalDateTime(orderTimeStamp);
+            if (orderTime.isAfter(oneWeekAgo)&& orderTime.isBefore(now)){
+                bill.setOrderTime(String.valueOf(orderTime));
+                Long totalAmount = future.get().getDocuments().get(i).getLong("totalAmount");
+                bill.setTotalAmount(totalAmount);
+                bill.setSellerUID(future.get().getDocuments().get(i).get("sellerUID").toString());
                 bill.setTitle(future.get().getDocuments().get(i).get("orderId").toString());
                 bill.setSubtitle("Invoice");
                 bill.setPaymentDetails(future.get().getDocuments().get(i).get("paymentDetails").toString());

@@ -1,6 +1,5 @@
 package com.example.epos.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.epos.common.R;
 import com.example.epos.dto.RestaurantDto;
@@ -8,20 +7,18 @@ import com.example.epos.entity.*;
 import com.example.epos.firemapper.RestaurantMapper;
 import com.example.epos.service.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
+import java.util.ArrayList;
+
+import java.util.concurrent.ExecutionException;
+
+
+import static com.example.epos.firemapper.OrderMapper.getOrderByname;
 import static com.example.epos.firemapper.OrderMapper.getOrderwithinOneweek;
 import static com.example.epos.firemapper.RestaurantMapper.changeRestaurantStatus;
 
@@ -100,10 +97,10 @@ public class RestaurantController {
         return R.success("Success");
     }
     @PostMapping("/sendbill")
-    public R<String> sendBill(String name) throws ExecutionException, InterruptedException, MessagingException, IOException {
+    public R<String> sendBill(@RequestParam("name") String name)throws ExecutionException, InterruptedException, MessagingException, IOException {
         //get current time
         ArrayList<Bill> billArrayList = new ArrayList<>();
-        billArrayList = getOrderwithinOneweek();
+        billArrayList = getOrderByname(name);
         sendMailService.sendInvoicePDF(billArrayList.get(0));
         return R.success("Success");
     }

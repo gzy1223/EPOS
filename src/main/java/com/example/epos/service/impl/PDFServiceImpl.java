@@ -1,8 +1,10 @@
 package com.example.epos.service.impl;
 
+import com.example.epos.dto.MenuforBillDto;
 import com.example.epos.entity.Bill;
 import com.example.epos.entity.Orders;
 import com.example.epos.entity.Restaurant;
+import com.example.epos.firemapper.OrderMapper;
 import com.example.epos.service.PDFService;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -12,6 +14,9 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 @Service
 public class PDFServiceImpl implements PDFService {
@@ -147,8 +152,27 @@ public class PDFServiceImpl implements PDFService {
             contentStream.setLeading(20f);
             contentStream.newLineAtOffset(80, 520);
             int n = Bill.getProductNames().size();
+            ArrayList<String> Quantity = new ArrayList<>();
+            ArrayList<String> price = new ArrayList<>();
             for(int i =0; i<n; i++) {
-                contentStream.showText(Bill.getProductNames().get(i));
+                // get the string of the document
+                String orderName = Bill.getProductNames().get(i);
+                if (orderName.equals("garbageValue")){
+                    continue;
+                }
+                //get the volume of the order
+                int colonIndex = orderName.indexOf(":");
+                if (colonIndex != -1){
+                    String afterColon = orderName.substring(colonIndex + 1);
+                    int volume = Integer.parseInt(afterColon);
+                    Quantity.add(String.valueOf(volume));
+                }
+                //get the name of the product before the ":"
+                String beforeColon = orderName.substring(0, colonIndex);
+                //get the menus in the seller document
+                MenuforBillDto menu = OrderMapper.getMenus(beforeColon, Bill.getSellerUID());
+                price.add(menu.getPrice());
+                contentStream.showText(menu.getName());
                 contentStream.newLine();
             }
             contentStream.endText();
@@ -157,8 +181,8 @@ public class PDFServiceImpl implements PDFService {
             contentStream.setFont(PDType1Font.TIMES_ROMAN, 12);
             contentStream.setLeading(20f);
             contentStream.newLineAtOffset(200, 520);
-            for(int i =0; i<n; i++) {
-                contentStream.showText("5");
+            for(int i =0; i<n-1; i++) {
+                contentStream.showText(price.get(i));
                 contentStream.newLine();
             }
             contentStream.endText();
@@ -167,8 +191,8 @@ public class PDFServiceImpl implements PDFService {
             contentStream.setFont(PDType1Font.TIMES_ROMAN, 12);
             contentStream.setLeading(20f);
             contentStream.newLineAtOffset(310, 520);
-            for(int i =0; i<n; i++) {
-                contentStream.showText("1");
+            for(int i =0; i<n-1; i++) {
+                contentStream.showText(Quantity.get(i).toString());
                 contentStream.newLine();
             }
             contentStream.endText();
@@ -177,28 +201,34 @@ public class PDFServiceImpl implements PDFService {
             contentStream.setFont(PDType1Font.TIMES_ROMAN, 12);
             contentStream.setLeading(20f);
             contentStream.newLineAtOffset(410, 520);
-            for(int i =0; i<n; i++) {
-               // price = ProductPrice.get(i)*ProductQty.get(i);
-                contentStream.showText("5");
+            BigDecimal total = new BigDecimal(0);
+            for(int i =0; i<n-1; i++) {
+               //accurately calcualte the price
+                total = total.add(new BigDecimal(price.get(i)).multiply(new BigDecimal(Quantity.get(i))));
+                contentStream.showText(total.toString());
                 contentStream.newLine();
             }
             contentStream.endText();
 
             contentStream.beginText();
             contentStream.setFont(PDType1Font.TIMES_ROMAN, 14);
-            contentStream.newLineAtOffset(310, (500-(20*n)));
+            contentStream.newLineAtOffset(310, (500-(20*(n-1))));
             contentStream.showText("Total: ");
             contentStream.endText();
 
             contentStream.beginText();
             contentStream.setFont(PDType1Font.TIMES_ROMAN, 14);
             //Calculating where total is to be written using number of products
-            contentStream.newLineAtOffset(410, (500-(20*n)));
+            contentStream.newLineAtOffset(410, (500-(20*(n-1))));
             contentStream.showText(String.valueOf(Bill.getTotalAmount()));
             contentStream.endText();
 
             contentStream.close();
         } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
 

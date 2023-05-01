@@ -184,7 +184,8 @@
           },
           generate(row) {
             let params = {}
-            params.id = row.id
+            params.name = row.name
+            console.log(row)
             sendbill(params).then(res => {
               if (String(res.code) === '1') {
                 this.$message.success('Send success!')
