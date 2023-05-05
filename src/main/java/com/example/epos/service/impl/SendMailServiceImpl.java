@@ -122,7 +122,7 @@ public class SendMailServiceImpl implements SendMailService {
         helper.setFrom(sendMailer);
 
         //邮件收件人 1或多个
-        helper.setTo("gzy7189@gmail.com");
+        helper.setTo("gzy7189@gmail.com"); //bill.getrestaurantEmail()
         //邮件主题
         helper.setSubject("Your invoice");
         //邮件内容

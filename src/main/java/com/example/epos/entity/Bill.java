@@ -10,5 +10,6 @@ public class Bill extends OrderDto {
     private String subtitle;
     private String title;
     private String restaurantName;
+    private String restaurantEmail;
     private ArrayList<String> productNames;
 }

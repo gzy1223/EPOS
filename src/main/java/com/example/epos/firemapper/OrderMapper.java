@@ -165,8 +165,10 @@ public class OrderMapper {
         Firestore db = FirestoreClient.getFirestore();
         //get seller uid
         Query sellerUidQuery =db.collection("sellers").whereEqualTo("sellerName",name);
+
         ApiFuture<QuerySnapshot> sellerUidFuture = sellerUidQuery.get();
         String sellerUid = sellerUidFuture.get().getDocuments().get(0).get("sellerUID").toString();
+        String sellerEmail = sellerUidFuture.get().getDocuments().get(0).get("sellerEmail").toString();
         Query uidQuery =db.collection("orders");
         ApiFuture<QuerySnapshot> future = uidQuery.whereEqualTo("sellerUID",sellerUid).get();
         ArrayList<Bill> BillArrayList = new ArrayList<>();
@@ -183,6 +185,7 @@ public class OrderMapper {
                 bill.setTitle(future.get().getDocuments().get(i).get("orderId").toString());
                 bill.setSubtitle("Invoice");
                 bill.setPaymentDetails(future.get().getDocuments().get(i).get("paymentDetails").toString());
+                bill.setRestaurantEmail(sellerEmail);
                 ArrayList<String> productNames = new ArrayList<>();
                 productNames = (ArrayList<String>) future.get().getDocuments().get(i).get("productIDs");
                 bill.setProductNames(productNames);
