@@ -42,7 +42,7 @@ public class RestaurantController {
       * @return: com.example.epos.common.R<java.lang.String>
       **/
 
-    @PostMapping
+    @PutMapping
     public R<String> save(@RequestBody RestaurantDto restaurantDto) throws ExecutionException, InterruptedException {
         RestaurantMapper.addRestaurant(restaurantDto);
 
@@ -83,14 +83,14 @@ public class RestaurantController {
       * @return: com.example.epos.common.R<java.lang.String>
       **/
 
-    @PutMapping
-    public R<String> update(@RequestBody RestaurantDto restaurantDto)
-    {
-        log.info(restaurantDto.toString());
-        restaurantService.updateWithFlavor(restaurantDto);
-
-        return R.success("Success");
-    }
+//    @PutMapping
+//    public R<String> update(@RequestBody RestaurantDto restaurantDto)
+//    {
+//        log.info(restaurantDto.toString());
+//        restaurantService.updateWithFlavor(restaurantDto);
+//
+//        return R.success("Success");
+//    }
     @PostMapping("/status/{name}")
     public R<String> updateStatus(String name) throws ExecutionException, InterruptedException {
         changeRestaurantStatus(name);
@@ -101,6 +101,9 @@ public class RestaurantController {
         //get current time
         ArrayList<Bill> billArrayList = new ArrayList<>();
         billArrayList = getOrderByname(name);
+        if (billArrayList.size() == 0){
+            return R.error("No order");
+        }
         sendMailService.sendInvoicePDF(billArrayList.get(0));
         return R.success("Success");
     }

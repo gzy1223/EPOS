@@ -24,7 +24,7 @@ public class ValidateCodeUtils {
                 code = code + 100000;//保证随机数为6位数字
             }
         }else{
-            throw new RuntimeException("只能生成4位或6位数字验证码");
+            throw new RuntimeException("only 6 digits");
         }
         return code;
     }
