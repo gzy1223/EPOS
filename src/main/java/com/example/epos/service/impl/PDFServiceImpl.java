@@ -6,6 +6,8 @@ import com.example.epos.entity.Orders;
 import com.example.epos.entity.Restaurant;
 import com.example.epos.firemapper.OrderMapper;
 import com.example.epos.service.PDFService;
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfWriter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -13,10 +15,15 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
+
+import static com.itextpdf.text.pdf.PdfName.DEST;
 
 @Service
 public class PDFServiceImpl implements PDFService {
@@ -83,6 +90,12 @@ public class PDFServiceImpl implements PDFService {
 
         return document;
     }
+
+    @Override
+    public void PrintPDF(String filePath) {
+
+    }
+
     @Override
     public PDDocument OrderPDF(Bill Bill) {
         String restaurantTitle = new String("Your order");
@@ -234,5 +247,21 @@ public class PDFServiceImpl implements PDFService {
 
         return document;
     }
-
+    @Override
+    public Document Receipt(Bill bill) throws FileNotFoundException, DocumentException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document(new RectangleReadOnly(227, 842));
+        PdfWriter.getInstance(document, baos);
+        document.open();
+        Font font = new Font(Font.FontFamily.COURIER, 12);
+        Paragraph p = new Paragraph("Receipt", font);
+        document.add(p);
+        p = new Paragraph("-------------------------------", font);
+        document.add(p);
+        String title = "Order ID:" + bill.getTitle();
+        p = new Paragraph(title, font);
+        document.add(p);
+        document.close();
+        return document;
+    }
 }
